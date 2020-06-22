@@ -3,9 +3,11 @@ package collections;
 import com.alibaba.fastjson.JSON;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import org.joda.time.DateTime;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +37,9 @@ public class SetRelevant {
     System.out.println(set.size());
     System.out.println(set.isEmpty());
     System.out.println(set);
+
+    TreeSet treeSet = new TreeSet();
+    LinkedHashSet linkedHashSet = new LinkedHashSet();
   }
 
   @Test
@@ -49,7 +54,6 @@ public class SetRelevant {
     System.out
         .println("HashSet用时:" + (hashSetEndTime.getMillis() - hashSetStartTime.getMillis()) + "ms");
     System.out.println(JSON.toJSONString(intset));
-
   }
 
   @Test
@@ -64,6 +68,5 @@ public class SetRelevant {
     System.out.println(
         "HashMap用时:" + (hashMapEndTime.getMillis() - hashMaptStartTime.getMillis()) + "ms");
     System.out.println(JSON.toJSONString(map));
-
   }
 }
