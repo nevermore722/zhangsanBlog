@@ -12,11 +12,27 @@ import org.junit.jupiter.api.Test;
 public class TestPolymorphic {
 
   @Test
-  public void testWhiteCat(){
+  public void testWhiteCat() {
     Animal animal = new WhiteCat();
     System.out.println(animal.colour);
     System.out.println(animal.letsNumber);
     animal.eat();
     ((WhiteCat) animal).play();
+  }
+
+  @Test
+  public void testBlackCat() {
+    Animal animal = new BlackCat();
+    System.out.println(animal.colour);
+    System.out.println(animal.letsNumber);
+    animal.eat();
+  }
+
+  @Test
+  public void testOrangeCat() {
+    Animal animal = new OrangeCat();
+    System.out.println(animal.colour);
+    System.out.println(animal.letsNumber);
+    animal.eat();
   }
 }
