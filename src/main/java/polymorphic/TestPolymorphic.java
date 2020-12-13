@@ -35,4 +35,11 @@ public class TestPolymorphic {
     System.out.println(animal.letsNumber);
     animal.eat();
   }
+
+  @Test
+  public void testSpottedDog() {
+    Animal animal = new SpottedDog();
+    System.out.println(animal.colour);
+    animal.eat();
+  }
 }
