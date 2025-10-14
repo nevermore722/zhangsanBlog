@@ -5,7 +5,8 @@
 - 解决缓存持久性问题。
 - 选择合适的redis数据结构去完成实际业务。
 - redis实现消息队列。
-- redis实现分布式锁
+- redis实现分布式锁。
+
 ## redis的基础数据结构
 通常认为redis有5种数据结构
 1. string:即一个key对应一个字符串，字符串小于1MB时每次加倍现有的空间，字符串长度大于1MB时每次扩容1MB，最大长度为512MB，如果value是整数时，可进行自增
@@ -25,11 +26,53 @@
 但是之前说的可能因为超时释放锁的问题还是没有解决，因此需要引入看门狗机制自动续期。<br>
 如果是redis集群部署的话还可能出现因为部分节点挂了导致获取锁不正常，还需要引入红锁（多数节点获取锁成功才算有效）机制。<br>
 可真是一个复杂的事情啊，所以往往业务不会自己重新造轮子，可以选择比较成熟的方案比如说Redisson。
+
 ## redis实现消息队列
+最简单的方式，可通过基础数据结构的list来实现，通过队列的先进先出机制实现。<br>
+如果要实现消息多播，redis提供了PubSub(发布\订阅模式)来实现。<br>
+redis5.0多了个数据结构Stream，可通过xadd、xread、xreadgroup等命令实现。
+
 ## redis的常见应用场景
+1. 热点数据缓存，比如商品信息
+2. 分布式系统共享缓存，比如说共享session
+3. 排行榜、按xx排序，使用zset
+4. 消息队列，具体见上面
+5. 通过HyperLogLog实现UV
+6. 通过Set实现共同好友
+7. 分布式锁、具体见上面
 ## redis为什么快
+redis快主要是因为redis是基于内存的操作，基于内存就能避免IO瓶颈。<br>
+redis是单线程的，单线程能避免线程上下文切换的消耗。<br>
+单线程实现高并发，主要是通过了非阻塞的IO多路复用实现的。<br>
+redis使用动态字符串、哈希表、跳表等高效数据结构。
 ## 如何实现redis持久化
-## redis部署方式
-## redis的过期策略
+1. RDB：即redis database，生成内存数据的快照。
+2. AOF：生成记录redis命令的AOF日志，AOF日志在长期运行过程重会变的很大，需要定期重写、压缩。
+3. 混合持久化：redis4.0后提供混合持久化方案，可基于定时的rdb数据叠加增量的AOF来进行持久化。
+
+## redis的部署方式
+1. 单机部署：单节点运行、一般仅自己学习时使用。
+2. 主从复制：较老的项目会使用、可实现一主多从。
+3. 哨兵模式：为了解决主节点可能挂的情况，为了能立即恢复redis的健康，可配置哨兵（Sentinel）来解决。
+4. 可通过redis cluster实现去中心化的redis集群。
+
+## redis的淘汰策略
+1. noeviction：默认的过期策略，拒绝写响应，可进行读。
+2. volatile-lru：尝试淘汰设置了过期时间的最近最少使用的key，注意使用的是近似LRU，没有使用双向链表、采用的是随机采用法进行淘汰。
+3. volatile-ttl：尝试淘汰设置了过期时间的剩余存活时间最小的key。
+4. volatile-random：随机淘汰有存活时间的key。
+5. allkeys-lru：在所有key重进行lru。
+6. allkeys-random：在所有key重进行ttl。
+7. volatile-lfu：尝试淘汰设置了过期时间的使用频率最低的key。
+8. allkeys-lfu：在所有key重进行lfu。
+
 ## 什么是LRU算法
+即Least Recently Used，优先淘汰最久未被使用的数据，具体思路是，将被访问的数据移动到顶端，这样处于尾端的数据就是最近未被访问过的数据，淘汰时优先淘汰尾端数据。<br>
+可使用双向链表数据结构来实现此功能。
+
 ## redis数据结构的底层实现
+string的底层为SDS(Simple Dynamic String)，是一个带长度信息的字节数组，类似于java的ArrayList结构，在字符串小于1MB之前，扩容采用加倍策略。当字符串大于1MB之后，每次扩容只多分配1MB。字符串长度不得超过512MB。<br>
+redis的hash结构用的是dict，实现上是使用两个hsahtable，扩容时采用渐进式rehash，扩容将旧的hashtable搬迁到新的hashtable中，搬迁结束后旧的被删除。hashtable底层实现和java的HashMap几乎一样。<br>
+zset和hash在元素个数较少的时候，采用的是ziplist来进行存储，这是一块连续的内存，能进行双向遍历。<br>
+当list元素较少时，采用的时ziplist，元素多时采用linkedlist。redis新版本采用quicklist替代了前面两个，大体思路为采用多段不连续的ziplist来实现。<br>
+zset的结构比较复杂，实现是一个hash加一个skiplist(跳跃列表)，skiplist是一个多层的双向链表，通过一层一层的搜索路径来找到对应的数据。那zset实现排序主要是因为hash表存储成员到分数的映射，跳跃表按分数排序存储。
